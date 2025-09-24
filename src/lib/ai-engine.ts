@@ -31,54 +31,78 @@ export class FusionAIEngine {
   }
 
   private async loadTextModel() {
-    // Simulate loading a sophisticated text generation model
+    // This function is now responsible for calling our backend API route,
+    // which in turn calls the real AI model.
     return {
       generate: async (prompt: string, options: any = {}) => {
-        // Advanced text generation logic
-        const responses = [
-          `Based on your prompt "${prompt}", here's a sophisticated response that demonstrates advanced reasoning and contextual understanding. This AI model processes information with human-like comprehension and provides detailed, accurate answers.`,
-          `Analyzing your request: "${prompt}". The Fusion AI engine leverages advanced neural networks to provide comprehensive responses that surpass traditional models in accuracy and relevance.`,
-          `Your query "${prompt}" has been processed through our advanced language model. Here's a detailed response that showcases the superior capabilities of Fusion AI 2.0.`
-        ];
-        
-        return responses[Math.floor(Math.random() * responses.length)] + 
-               `\n\nThis response was generated using our proprietary local AI engine, ensuring privacy and lightning-fast processing without external API dependencies.`;
+        try {
+          // 1. Make a POST request to our new API endpoint.
+          const response = await fetch('/api/generate/text', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ prompt }),
+          });
+
+          // 2. Parse the JSON response from our backend.
+          const result = await response.json();
+
+          // 3. If the request was successful, return the generated text.
+          if (response.ok) {
+            return result.text;
+          } else {
+            // If there was an error, throw an error with the message from the API.
+            throw new Error(result.error || 'The AI service failed to generate a response.');
+          }
+        } catch (error) {
+          // 4. Handle network errors or other exceptions during the fetch.
+          console.error("Failed to call text generation API:", error);
+          // Provide a user-friendly error message.
+          return "There was a problem connecting to the AI service. Please check your connection and try again.";
+        }
       }
     };
   }
 
   private async loadImageModel() {
+    // This function now calls our backend API for image generation.
     return {
       generate: async (prompt: string, options: any = {}) => {
-        // Simulate image generation
-        const canvas = document.createElement('canvas');
-        canvas.width = options.width || 512;
-        canvas.height = options.height || 512;
-        const ctx = canvas.getContext('2d');
-        
-        if (ctx) {
-          // Create gradient background
-          const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-          gradient.addColorStop(0, '#667eea');
-          gradient.addColorStop(1, '#764ba2');
-          ctx.fillStyle = gradient;
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
-          
-          // Add text
-          ctx.fillStyle = 'white';
-          ctx.font = '24px Arial';
-          ctx.textAlign = 'center';
-          ctx.fillText('Generated Image', canvas.width / 2, canvas.height / 2);
-          ctx.font = '16px Arial';
-          ctx.fillText(prompt, canvas.width / 2, canvas.height / 2 + 40);
+        try {
+          // 1. Make a POST request to our image generation endpoint.
+          const response = await fetch('/api/generate/image', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ prompt }),
+          });
+
+          // 2. If the request was successful, process the image blob.
+          if (response.ok) {
+            const imageBlob = await response.blob();
+            // Convert the blob to a temporary local URL that can be used
+            // in the 'src' attribute of an <img> tag.
+            return URL.createObjectURL(imageBlob);
+          } else {
+            // 3. Handle errors returned from the API.
+            const result = await response.json();
+            throw new Error(result.error || 'The AI service failed to generate an image.');
+          }
+        } catch (error) {
+          // 4. Handle network errors or other exceptions.
+          console.error("Failed to call image generation API:", error);
+          // Return a path to a placeholder error image or throw an error.
+          throw error;
         }
-        
-        return canvas.toDataURL();
       },
-      
+
       refine: async (imageData: string, prompt: string) => {
-        // Simulate image refinement
-        return imageData; // Return refined image
+        // This functionality can be implemented in a future step by calling
+        // an image-to-image or inpainting model API.
+        console.warn("Image refinement is not yet implemented.");
+        return imageData; // For now, return the original image.
       }
     };
   }
