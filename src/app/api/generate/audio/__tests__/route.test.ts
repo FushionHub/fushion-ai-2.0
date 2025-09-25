@@ -15,19 +15,19 @@ afterAll(() => {
   process.env = OLD_ENV;
 });
 
-describe('POST /api/generate/image', () => {
+describe('POST /api/generate/audio', () => {
 
-  it('should return an image blob on a successful API call', async () => {
-    // Arrange: Mock a successful response with a fake image blob
-    const mockImageBlob = new Blob(['fake-image-data'], { type: 'image/png' });
+  it('should return an audio blob on a successful API call', async () => {
+    // Arrange: Mock a successful response with a fake audio blob
+    const mockAudioBlob = new Blob(['fake-audio-data'], { type: 'audio/flac' });
     (fetch as jest.Mock).mockResolvedValueOnce({
       ok: true,
-      blob: async () => mockImageBlob,
+      blob: async () => mockAudioBlob,
     });
 
-    const request = new Request('http://localhost/api/generate/image', {
+    const request = new Request('http://localhost/api/generate/audio', {
       method: 'POST',
-      body: JSON.stringify({ prompt: 'A beautiful sunset' }),
+      body: JSON.stringify({ text: 'Hello world' }),
       headers: { 'Content-Type': 'application/json' },
     });
 
@@ -37,8 +37,8 @@ describe('POST /api/generate/image', () => {
 
     // Assert: Check that the response is correct
     expect(response.status).toBe(200);
-    expect(response.headers.get('Content-Type')).toEqual('image/png');
-    expect(await responseBlob.text()).toEqual('fake-image-data');
+    expect(response.headers.get('Content-Type')).toEqual('audio/flac');
+    expect(await responseBlob.text()).toEqual('fake-audio-data');
   });
 
   it('should return an error when the Hugging Face API fails', async () => {
@@ -49,9 +49,9 @@ describe('POST /api/generate/image', () => {
       json: async () => ({ error: 'Model is currently loading' }),
     });
 
-    const request = new Request('http://localhost/api/generate/image', {
+    const request = new Request('http://localhost/api/generate/audio', {
       method: 'POST',
-      body: JSON.stringify({ prompt: 'A beautiful sunset' }),
+      body: JSON.stringify({ text: 'Hello world' }),
       headers: { 'Content-Type': 'application/json' },
     });
 
@@ -60,15 +60,15 @@ describe('POST /api/generate/image', () => {
     const body = await response.json();
 
     // Assert: Check that the error response is correct
-    expect(response.status).toBe(500); // Our route returns 500
+    expect(response.status).toBe(500);
     expect(body).toEqual({ error: 'Model is currently loading' });
   });
 
-  it('should return a 400 error if the prompt is missing', async () => {
-    // Arrange: Create a request with no prompt
-    const request = new Request('http://localhost/api/generate/image', {
+  it('should return a 400 error if the text is missing', async () => {
+    // Arrange: Create a request with no text
+    const request = new Request('http://localhost/api/generate/audio', {
       method: 'POST',
-      body: JSON.stringify({}),
+      body: JSON.stringify({}), // Missing text
       headers: { 'Content-Type': 'application/json' },
     });
 
@@ -78,7 +78,7 @@ describe('POST /api/generate/image', () => {
 
     // Assert: Check for 400 Bad Request
     expect(response.status).toBe(400);
-    expect(body).toEqual({ error: 'Prompt is required' });
+    expect(body).toEqual({ error: 'Text is required' });
   });
 
 });
