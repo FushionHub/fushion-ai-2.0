@@ -132,12 +132,41 @@ const ChatInterface = () => {
     toast.success('Message copied to clipboard');
   };
 
-  const speakMessage = (content: string) => {
-    if ('speechSynthesis' in window) {
-      const utterance = new SpeechSynthesisUtterance(content);
-      utterance.rate = 0.8;
-      utterance.pitch = 1;
-      speechSynthesis.speak(utterance);
+  const [audioPlayer, setAudioPlayer] = useState<HTMLAudioElement | null>(null);
+  const [currentlyPlaying, setCurrentlyPlaying] = useState<string | null>(null);
+
+  // Stop audio when component unmounts
+  useEffect(() => {
+    return () => {
+      if (audioPlayer) {
+        audioPlayer.pause();
+      }
+    };
+  }, [audioPlayer]);
+
+  const playGeneratedAudio = async (messageId: string, content: string) => {
+    if (currentlyPlaying === messageId) {
+      if (audioPlayer) {
+        audioPlayer.pause();
+        setCurrentlyPlaying(null);
+      }
+      return;
+    }
+
+    setCurrentlyPlaying(messageId); // Set loading state for this message
+    try {
+      const audioData = await fusionAI.generateAudio(content);
+      const player = new Audio(audioData.url);
+      setAudioPlayer(player);
+
+      player.onended = () => {
+        setCurrentlyPlaying(null);
+      };
+
+      player.play();
+    } catch (error) {
+      toast.error("Failed to generate audio.");
+      setCurrentlyPlaying(null);
     }
   };
 
@@ -199,11 +228,16 @@ const ChatInterface = () => {
                             <Copy className="w-4 h-4" />
                           </button>
                           <button
-                            onClick={() => speakMessage(message.content)}
+                            onClick={() => playGeneratedAudio(message.id, message.content)}
                             className="p-1 rounded hover:bg-gray-700/50 transition-colors"
                             title="Read aloud"
+                            disabled={currentlyPlaying !== null && currentlyPlaying !== message.id}
                           >
-                            <Volume2 className="w-4 h-4" />
+                            {currentlyPlaying === message.id ? (
+                              <div className="w-4 h-4 rounded-full bg-blue-500 animate-pulse" />
+                            ) : (
+                              <Volume2 className="w-4 h-4" />
+                            )}
                           </button>
                         </div>
                       )}

@@ -40,8 +40,8 @@ export class FusionAIEngine {
           `Analyzing your request: "${prompt}". The Fusion AI engine leverages advanced neural networks to provide comprehensive responses that surpass traditional models in accuracy and relevance.`,
           `Your query "${prompt}" has been processed through our advanced language model. Here's a detailed response that showcases the superior capabilities of Fusion AI 2.0.`
         ];
-        
-        return responses[Math.floor(Math.random() * responses.length)] + 
+
+        return responses[Math.floor(Math.random() * responses.length)] +
                `\n\nThis response was generated using our proprietary local AI engine, ensuring privacy and lightning-fast processing without external API dependencies.`;
       }
     };
@@ -55,7 +55,7 @@ export class FusionAIEngine {
         canvas.width = options.width || 512;
         canvas.height = options.height || 512;
         const ctx = canvas.getContext('2d');
-        
+
         if (ctx) {
           // Create gradient background
           const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
@@ -63,7 +63,7 @@ export class FusionAIEngine {
           gradient.addColorStop(1, '#764ba2');
           ctx.fillStyle = gradient;
           ctx.fillRect(0, 0, canvas.width, canvas.height);
-          
+
           // Add text
           ctx.fillStyle = 'white';
           ctx.font = '24px Arial';
@@ -72,10 +72,10 @@ export class FusionAIEngine {
           ctx.font = '16px Arial';
           ctx.fillText(prompt, canvas.width / 2, canvas.height / 2 + 40);
         }
-        
+
         return canvas.toDataURL();
       },
-      
+
       refine: async (imageData: string, prompt: string) => {
         // Simulate image refinement
         return imageData; // Return refined image
@@ -121,30 +121,32 @@ export class FusionAIEngine {
   private async loadAudioModel() {
     return {
       generate: async (text: string, options: any = {}) => {
-        // Simulate audio generation using Web Speech API
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.voice = options.voice || speechSynthesis.getVoices()[0];
-        utterance.rate = options.rate || 1;
-        utterance.pitch = options.pitch || 1;
-        
-        return new Promise((resolve) => {
-          utterance.onend = () => {
-            resolve({
-              url: 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIG2m98OScTgwOUarm7blmGgU7k9n1unEiBC13yO/eizEIHWq+8+OWT',
-              duration: text.length * 0.1, // Estimate duration
-              format: 'wav'
-            });
-          };
-          speechSynthesis.speak(utterance);
+        const response = await fetch('/api/generate/audio', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ text }),
         });
+
+        if (response.ok) {
+          const audioBlob = await response.blob();
+          return {
+            url: URL.createObjectURL(audioBlob),
+            duration: 0,
+            format: 'flac'
+          };
+        } else {
+          const result = await response.json();
+          throw new Error(result.error || 'Failed to generate audio from API');
+        }
       },
       
       getVoices: () => {
-        return speechSynthesis.getVoices().map(voice => ({
-          name: voice.name,
-          lang: voice.lang,
-          gender: voice.name.toLowerCase().includes('female') ? 'female' : 'male'
-        }));
+        // This would need to be updated to fetch available voices from a
+        // configured API or a hardcoded list if we use a server-based model.
+        console.warn("getVoices is not implemented for server-based TTS.");
+        return [];
       }
     };
   }
